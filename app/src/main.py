@@ -1,9 +1,14 @@
 import flet as ft
 import pickle
 import pandas as pd
+import os
+from subprocess import run
+
+# localhost:8502
+DEFAULT_FLET_PORT = 8502
 
 # Десериализация обученной нейросети
-with open(r'models\nn_regressor.pkl', 'rb') as nn_file:
+with open(r'./models/nn_regressor.pkl', 'rb') as nn_file:
     neural_network_regressor = pickle.load(nn_file)
     
 # Основное тело программы
@@ -43,6 +48,7 @@ def main(page: ft.Page):
             txt_carat.error_text = 'Нужно ввести положительное число'
         page.update()
             
+    
     
     # Конвертация файла датасета в pandas.DataFrame
     def pick_files_result(e: ft.FilePickerResultEvent):
@@ -168,7 +174,8 @@ def main(page: ft.Page):
         divisions=20,
         label='{value}%',
         active_color=ft.colors.PINK_400,
-        value=50
+        value=50,
+        width=600
     )
     # Слайдер для признака ширины
     table_text = ft.Row([ft.Icon(ft.icons.NUMBERS, color=ft.colors.GREY_400), ft.Text('Общий процент ширины верхней грани алмаза')])
@@ -178,7 +185,8 @@ def main(page: ft.Page):
         divisions=20,
         label='{value}%',
         active_color=ft.colors.PINK_400,
-        value=50
+        value=50,
+        width=600
     )
     
     # Полученное предсказание
@@ -196,7 +204,7 @@ def main(page: ft.Page):
     
     # Спойлер с изображением примера датасета
     hint_button = ft.OutlinedButton(text='Пример датасета', on_click=hint_click)
-    hint_image = ft.Image(src=r'img\example.png', visible=False)
+    hint_image = ft.Image(src=r'./img/example.png', visible=False)
     
     # Кнопки загрузки/сохранения файла
     upload_button = ft.ElevatedButton(
@@ -210,6 +218,7 @@ def main(page: ft.Page):
         on_click=lambda _: save_file_dialog.save_file(file_name='predictions.csv'),
         disabled=True,
     )
+    
     # Диалог выбора файла для загрузки        
     pick_files_dialog = ft.FilePicker(on_result=pick_files_result)
     # Имена выбранных файлов
@@ -220,6 +229,11 @@ def main(page: ft.Page):
     save_file_path = ft.Text()
     # Информация об операции с файлами
     success_info = ft.Text()
+    # Предупреждение о неподдерживаемой функции
+    web_warning = ft.Row([
+            ft.Icon(ft.icons.DANGEROUS),
+            ft.Text('Загрузка файлов пока что не поддерживается в режиме веб-браузера')
+        ], visible=False)
     # Добавляем оба диалога выбора файлов в оверлей
     page.overlay.extend([pick_files_dialog, save_file_dialog])
     # Добавляем на страницу все элементы
@@ -236,6 +250,7 @@ def main(page: ft.Page):
                 txt_clarity,
                 submit_button,
                 output,
+                web_warning,
                 hint_button,
                 hint_image,
                 ft.Row([upload_button, selected_files]),
@@ -244,6 +259,24 @@ def main(page: ft.Page):
             ]
         )
     )
-
+    # Предупреждение о неподдерживаемом функционале в режиме веб-браузера
+    if page.web:
+        upload_button.disabled = True
+        web_warning.visible = True
+        hint_button.disabled = True
+        page.update()
+    
 if __name__ == '__main__':
-    ft.app(target=main, view=ft.FLET_APP)
+    input_text = ''.join([
+        'Введите "web", чтобы открыть веб-версию приложения (не все функции поддерживаются)\n',
+        'Введите "app", чтобы открыть десктопную версию приложения (недоступно в Docker)\n'
+    ])
+    user_input = input(input_text)
+    while user_input not in ['app', 'web']:
+        user_input = input(input_text)
+    if user_input == 'web':
+        flet_port = int(os.getenv("FLET_PORT", DEFAULT_FLET_PORT))
+        print(f'\nURL: localhost:{flet_port}')
+        ft.app(target=main, view=None, port=flet_port)
+    elif user_input == 'app':
+        ft.app(target=main, view=ft.FLET_APP)
