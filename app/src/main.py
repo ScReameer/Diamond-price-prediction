@@ -1,8 +1,7 @@
 import flet as ft
 import pickle
 import pandas as pd
-import os
-from subprocess import run
+import os 
 
 # localhost:8502
 DEFAULT_FLET_PORT = 8502
@@ -48,8 +47,6 @@ def main(page: ft.Page):
             txt_carat.error_text = 'Нужно ввести положительное число'
         page.update()
             
-    
-    
     # Конвертация файла датасета в pandas.DataFrame
     def pick_files_result(e: ft.FilePickerResultEvent):
         selected_files.value = (
